@@ -43,7 +43,7 @@ namespace PLH {
 			ThreadHandle& operator=(const ThreadHandle& other) = delete; //copy assignment
 
 			//Move
-			ThreadHandle(ThreadHandle &&other) noexcept
+			ThreadHandle(ThreadHandle &&other)
 				: m_IsSuspended(other.m_IsSuspended)
 				, m_hThread(other.m_hThread)
 				, m_ThreadId(other.m_ThreadId)
@@ -53,7 +53,7 @@ namespace PLH {
 			}
 
 			//Move assignment
-			ThreadHandle& operator=(ThreadHandle &&other) noexcept
+			ThreadHandle& operator=(ThreadHandle &&other)
 			{
 				if (this != &other)
 				{
@@ -300,13 +300,6 @@ namespace PLH {
 	class IHook
 	{
 	public:
-		IHook() = default;
-		IHook(IHook&& other) = default; //move
-		IHook& operator=(IHook&& other) = default;//move assignment
-		IHook(const IHook& other) = delete; //copy
-		IHook& operator=(const IHook& other) = delete; //copy assignment
-		virtual ~IHook() = default;
-
 		virtual bool Hook() = 0;
 		virtual void UnHook() = 0;
 		virtual HookType GetType() = 0;
@@ -381,10 +374,6 @@ namespace PLH {
 	public:
 		friend class VFuncDetour;
 		X86Detour();
-		X86Detour(X86Detour&& other) = default; //move
-		X86Detour& operator=(X86Detour&& other) = default;//move assignment
-		X86Detour(const X86Detour& other) = delete; //copy
-		X86Detour& operator=(const X86Detour& other) = delete; //copy assignment
 		virtual ~X86Detour();
 
 		virtual bool Hook() override;
@@ -407,10 +396,6 @@ namespace PLH {
 		friend class VFuncDetour;
 		//Credits DarthTon, evolution536
 		X64Detour();
-		X64Detour(X64Detour&& other) = default; //move
-		X64Detour& operator=(X64Detour&& other) = default;//move assignment
-		X64Detour(const X64Detour& other) = delete; //copy
-		X64Detour& operator=(const X64Detour& other) = delete; //copy assignment
 		virtual ~X64Detour();
 
 		virtual bool Hook() override;
@@ -430,10 +415,6 @@ namespace PLH {
 	{
 	public:
 		VFuncSwap();
-		VFuncSwap(VFuncSwap&& other) = default;
-		VFuncSwap& operator=(VFuncSwap&& other) = default;
-		VFuncSwap(const VFuncSwap& other) = delete;
-		VFuncSwap& operator=(const VFuncSwap& other) = delete;
 		virtual ~VFuncSwap();
 
 		virtual bool Hook() override;
@@ -459,10 +440,6 @@ namespace PLH {
 	{
 	public:
 		VFuncDetour();
-		VFuncDetour(VFuncDetour&& other) = default; //move
-		VFuncDetour& operator=(VFuncDetour&& other) = default;//move assignment
-		VFuncDetour(const VFuncDetour& other) = delete; //copy
-		VFuncDetour& operator=(const VFuncDetour& other) = delete; //copy assignment
 		virtual ~VFuncDetour();
 
 		virtual bool Hook() override;
@@ -479,7 +456,7 @@ namespace PLH {
 	protected:
 		virtual void PostError(const RuntimeError& Err) override;
 	private:
-		std::unique_ptr<Detour> m_Detour;
+		Detour *m_Detour;
 		/*We don't need an m_Hooked bool because this 
 		detour object above handles the unhook on destruction by itself*/
 	};
@@ -496,10 +473,6 @@ namespace PLH {
 	{
 	public:
 		VTableSwap();
-		VTableSwap(VTableSwap&& other) = default; //move
-		VTableSwap& operator=(VTableSwap&& other) = default;//move assignment
-		VTableSwap(const VTableSwap& other) = delete; //copy
-		VTableSwap& operator=(const VTableSwap& other) = delete; //copy assignment
 		virtual ~VTableSwap();
 
 		virtual bool Hook() override;
@@ -541,10 +514,6 @@ namespace PLH {
 	{
 	public:
 		IATHook();
-		IATHook(IATHook&& other) = default; //move
-		IATHook& operator=(IATHook&& other) = default;//move assignment
-		IATHook(const IATHook& other) = delete; //copy
-		IATHook& operator=(const IATHook& other) = delete; //copy assignment
 		virtual ~IATHook();
 
 		virtual bool Hook() override;
@@ -611,10 +580,6 @@ namespace PLH {
 			ERROR_TYPE
 		};
 		VEHHook();
-		VEHHook(VEHHook&& other) = default; //move
-		VEHHook& operator=(VEHHook&& other) = default;//move assignment
-		VEHHook(const VEHHook& other) = delete; //copy
-		VEHHook& operator=(const VEHHook& other) = delete; //copy assignment
 		virtual ~VEHHook();
 
 		virtual bool Hook() override;
@@ -628,20 +593,20 @@ namespace PLH {
 		}
 		void SetupHook(uint8_t* Src, uint8_t* Dest, VEHMethod Method);
 
-		auto GetProtectionObject()
-		{
-			//Return an object to restore INT3_BP after callback is done
-			return finally([&]() {
-				if (m_ThisCtx.m_Type == VEHMethod::INT3_BP)
-				{
-					MemoryProtect Protector(m_ThisCtx.m_Src, 1, PAGE_EXECUTE_READWRITE);
-					*m_ThisCtx.m_Src = 0xCC;
-				}else if (m_ThisCtx.m_Type == VEHMethod::GUARD_PAGE) {
-					DWORD OldProtection;
-					VirtualProtect(m_ThisCtx.m_Src, 1, PAGE_EXECUTE_READWRITE | PAGE_GUARD, &OldProtection);
-				}
-			});
-		}
+		//auto GetProtectionObject()
+		//{
+		//	//Return an object to restore INT3_BP after callback is done
+		//	return finally([&]() {
+		//		if (m_ThisCtx.m_Type == VEHMethod::INT3_BP)
+		//		{
+		//			MemoryProtect Protector(m_ThisCtx.m_Src, 1, PAGE_EXECUTE_READWRITE);
+		//			*m_ThisCtx.m_Src = 0xCC;
+		//		}else if (m_ThisCtx.m_Type == VEHMethod::GUARD_PAGE) {
+		//			DWORD OldProtection;
+		//			VirtualProtect(m_ThisCtx.m_Src, 1, PAGE_EXECUTE_READWRITE | PAGE_GUARD, &OldProtection);
+		//		}
+		//	});
+		//}
 	protected:
 		struct HookCtx {
 			VEHMethod m_Type;
@@ -1245,7 +1210,7 @@ PLH::VFuncSwap::~VFuncSwap()
 /*----------------------------------------------*/
 PLH::VFuncDetour::VFuncDetour() :IHook()
 {
-	m_Detour = std::make_unique<Detour>();
+	m_Detour = new Detour;
 }
 
 PLH::VFuncDetour::~VFuncDetour()
